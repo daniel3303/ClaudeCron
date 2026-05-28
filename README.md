@@ -2,6 +2,8 @@
 
 Run [Claude Code](https://www.anthropic.com/claude-code) on a schedule — without burning your context window.
 
+![claude-cron restart mode — fresh Claude session every 5s](docs/demo.gif)
+
 `claude-cron` drives Claude in two modes:
 
 - **restart** — fire a one-shot prompt, kill the process, sleep, repeat. No context carries between runs.

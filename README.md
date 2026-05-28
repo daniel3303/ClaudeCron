@@ -2,7 +2,7 @@
 
 Run [Claude Code](https://www.anthropic.com/claude-code) on a schedule — without burning your context window, and without leaving your subscription bucket.
 
-> **Heads up — June 15, 2026.** Anthropic is moving `claude -p`, the Claude Agent SDK, third-party SDK apps, and Claude Code GitHub Actions **off subscription limits** and onto a separate monthly credit pool ($20 on Pro, $100 on Max 5x, $200 on Max 20x) metered at standard API list prices. Interactive Claude Code stays on the subscription. `claude-code-cron` drives the *interactive* Claude TUI — it never invokes `claude -p` or the SDK — so it stays on your existing subscription bucket. If you've been running scheduled work via `claude -p` on a Max plan, switching here keeps you on the cheaper rails.
+> **Heads up — June 15, 2026.** Anthropic is moving `claude -p`, the Claude Agent SDK, third-party SDK apps, and Claude Code GitHub Actions **off subscription limits** and onto a separate monthly credit pool ($20 on Pro, $100 on Max 5x, $200 on Max 20x) metered at standard API list prices. Interactive Claude Code stays on the subscription. `claude-code-cron` drives the *interactive* Claude TUI — it never invokes `claude -p` or the SDK — so it stays on your existing subscription bucket. If you've been running scheduled work via `claude -p` on a Max plan, switching here keeps you on the cheaper rails. ([Anthropic announcement](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan))
 
 ![claude-cron restart mode — fresh Claude session every 5s](docs/demo.gif)
 

@@ -1,6 +1,6 @@
 {
   "name": "claude-cron",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run Claude Code on a schedule — fire a prompt, wait for it to finish, kill it, repeat.",
   "type": "module",
   "bin": {

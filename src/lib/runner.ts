@@ -44,18 +44,16 @@ export function runOnce(options: RunOnceOptions): Promise<void> {
       if (!promptSent) {
         if (quietMs >= settleSeconds * 1000) {
           promptSent = true;
-          // Split text + Enter with a short delay so slash-command
-          // autocomplete in Claude's TUI doesn't eat the `\r`.
+          // Type the prompt, then send TWO Enters. A slash-command prompt
+          // opens an autocomplete dropdown in Claude's TUI, and the first
+          // Enter only confirms the highlighted completion instead of
+          // submitting. The second Enter submits. For non-slash prompts the
+          // first Enter submits and the second lands on an empty input box,
+          // which the TUI ignores.
           child.write(prompt);
           lastOutputMs = Date.now();
-          setTimeout(() => {
-            try {
-              child.write('\r');
-            } catch {
-              // child already exited; ignore
-            }
-            lastOutputMs = Date.now();
-          }, SUBMIT_DELAY_MS);
+          sendEnter(child, SUBMIT_DELAY_MS, () => { lastOutputMs = Date.now(); });
+          sendEnter(child, SUBMIT_DELAY_MS * 2, () => { lastOutputMs = Date.now(); });
         }
         return;
       }
@@ -75,6 +73,17 @@ export function runOnce(options: RunOnceOptions): Promise<void> {
       resolve();
     });
   });
+}
+
+function sendEnter(child: pty.IPty, delayMs: number, onSent: () => void): void {
+  setTimeout(() => {
+    try {
+      child.write('\r');
+      onSent();
+    } catch {
+      // child already exited; ignore
+    }
+  }, delayMs);
 }
 
 function safeKill(child: pty.IPty): void {

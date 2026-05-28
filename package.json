@@ -1,0 +1,47 @@
+{
+  "name": "claude-cron",
+  "version": "0.1.0",
+  "description": "Run Claude Code on a schedule — fire a prompt, wait for it to finish, kill it, repeat.",
+  "type": "module",
+  "bin": {
+    "claude-cron": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "node-pty": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cron",
+    "schedule",
+    "automation",
+    "cli"
+  ],
+  "author": "Daniel Oliveira",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daniel3303/ClaudeCron.git"
+  },
+  "bugs": {
+    "url": "https://github.com/daniel3303/ClaudeCron/issues"
+  },
+  "homepage": "https://github.com/daniel3303/ClaudeCron#readme"
+}

@@ -2,6 +2,7 @@ import pty from 'node-pty';
 
 const TICK_MS = 500;
 const KILL_GRACE_MS = 200;
+const SUBMIT_DELAY_MS = 200;
 const CTRL_C = '\x03';
 
 export interface RunOnceOptions {
@@ -43,8 +44,18 @@ export function runOnce(options: RunOnceOptions): Promise<void> {
       if (!promptSent) {
         if (quietMs >= settleSeconds * 1000) {
           promptSent = true;
-          child.write(prompt + '\r');
+          // Split text + Enter with a short delay so slash-command
+          // autocomplete in Claude's TUI doesn't eat the `\r`.
+          child.write(prompt);
           lastOutputMs = Date.now();
+          setTimeout(() => {
+            try {
+              child.write('\r');
+            } catch {
+              // child already exited; ignore
+            }
+            lastOutputMs = Date.now();
+          }, SUBMIT_DELAY_MS);
         }
         return;
       }

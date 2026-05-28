@@ -76,43 +76,6 @@ claude-cron clear 30m "/loop 1m /improve-code"
 claude-cron clear 1h "/loop 5m /add-test"
 ```
 
-### Legacy form
-
-The original positional form still works and is treated as `restart`:
-
-```bash
-claude-cron 30m "summarize today's market news"
-# equivalent to:
-claude-cron restart 30m "summarize today's market news"
-```
-
-## How it works
-
-Claude Code is an interactive TUI — it never exits on its own. ClaudeCron spawns it inside a pseudo-terminal (PTY) and watches the output stream:
-
-**restart mode**
-1. After ~2s of initial quiet, Claude is at the input box → type the prompt.
-2. While Claude works, the spinner and gradient keep the stream busy → keep waiting.
-3. After `idle-seconds` of total silence, the response is finished → send Ctrl+C, then kill the process.
-4. Sleep `interval`, then repeat.
-
-If a prompt triggers tool calls with long quiet stretches (slow web fetches, big builds), raise `idle-seconds`.
-
-**clear mode**
-1. After ~2s of initial quiet, type the prompt.
-2. Sleep `interval`.
-3. Type `/clear`, wait for the next ~2s of quiet, type the prompt again.
-4. Goto 2. The Claude process is never killed until you Ctrl+C.
-
-## Development
-
-```bash
-npm install
-npm run build      # tsc → dist/
-node dist/cli.js restart 30s "say hi"
-node dist/cli.js clear   30s "/loop 1m say hi"
-```
-
 ## License
 
 MIT

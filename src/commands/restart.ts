@@ -1,18 +1,28 @@
 import type { IPty } from 'node-pty';
 import { parseInterval } from '../lib/interval.js';
 import { runOnce } from '../lib/runner.js';
+import { sleep } from '../lib/sleep.js';
+import { setupStdinForwarding } from '../lib/stdin.js';
 
 const DEFAULT_IDLE_SECONDS = 5;
 const SETTLE_SECONDS = 2;
-const CTRL_C_BYTE = 0x03;
 
-export interface RunCommandArgs {
+export interface RestartCommandArgs {
   interval: string;
   prompt: string;
   idleSeconds?: string;
 }
 
-export async function runCommand(args: RunCommandArgs): Promise<void> {
+/**
+ * Restart mode: every `interval`, spawn a fresh Claude, send the prompt,
+ * wait for it to go idle, kill it, sleep, repeat. This is the original
+ * `claude-cron` behaviour — best when each run is a discrete one-shot
+ * task and conversation context should NOT carry across runs.
+ *
+ * Compare with `clearCommand` (clear mode), which keeps a single Claude
+ * alive and only resets its context periodically.
+ */
+export async function restartCommand(args: RestartCommandArgs): Promise<void> {
   const intervalSeconds = parseInterval(args.interval);
   const idleSeconds = parseIdleSeconds(args.idleSeconds);
 
@@ -53,30 +63,6 @@ export async function runCommand(args: RunCommandArgs): Promise<void> {
   }
 }
 
-function setupStdinForwarding(
-  getChild: () => IPty | null,
-  onInterrupt: () => void
-): () => void {
-  if (!process.stdin.isTTY) return () => { /* nothing to restore */ };
-
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  const onData = (data: Buffer): void => {
-    if (data.length === 1 && data[0] === CTRL_C_BYTE) {
-      onInterrupt();
-      return;
-    }
-    getChild()?.write(data.toString());
-  };
-  process.stdin.on('data', onData);
-
-  return () => {
-    process.stdin.off('data', onData);
-    process.stdin.setRawMode(false);
-    process.stdin.pause();
-  };
-}
-
 function parseIdleSeconds(raw: string | undefined): number {
   if (raw === undefined) return DEFAULT_IDLE_SECONDS;
   const value = Number(raw);
@@ -84,19 +70,4 @@ function parseIdleSeconds(raw: string | undefined): number {
     throw new Error(`invalid idle-seconds: "${raw}"`);
   }
   return value;
-}
-
-function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal.aborted) return reject(new Error('aborted'));
-    const timer = setTimeout(resolve, ms);
-    signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timer);
-        reject(new Error('aborted'));
-      },
-      { once: true }
-    );
-  });
 }

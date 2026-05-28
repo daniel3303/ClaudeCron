@@ -1,4 +1,4 @@
-# ClaudeCron
+# ClaudeCodeCron
 
 Run [Claude Code](https://www.anthropic.com/claude-code) on a schedule — without burning your context window.
 
@@ -26,7 +26,7 @@ Either way, the outer scheduler is a tiny Node process that won't degrade under 
 ## Install
 
 ```bash
-npm install -g claude-cron
+npm install -g claude-code-cron
 ```
 
 Requires Node 20+ and `claude` on your `PATH`.
@@ -36,7 +36,6 @@ Requires Node 20+ and `claude` on your `PATH`.
 ```bash
 claude-cron restart <interval> "<prompt>" [idle-seconds]
 claude-cron clear   <interval> "<prompt>"
-claude-cron         <interval> "<prompt>" [idle-seconds]   # legacy, = restart
 ```
 
 | Arg | Meaning |
@@ -49,7 +48,7 @@ Stop the loop with **Ctrl+C**.
 
 ### restart mode
 
-Every `interval`, ClaudeCron spawns a fresh Claude, sends the prompt, waits for the response to finish, kills the process, and sleeps. Use this when each run is a discrete task and conversation context should NOT carry across runs.
+Every `interval`, ClaudeCodeCron spawns a fresh Claude, sends the prompt, waits for the response to finish, kills the process, and sleeps. Use this when each run is a discrete task and conversation context should NOT carry across runs.
 
 ```bash
 # Every 30 minutes, summarize the market in a fresh session
@@ -64,7 +63,7 @@ claude-cron restart 30s "say hi in three words"
 
 ### clear mode
 
-ClaudeCron spawns **one** Claude session, sends the prompt once, and every `interval` types `/clear` followed by the prompt again. The Claude process stays alive between cycles; only the conversation history is dropped.
+ClaudeCodeCron spawns **one** Claude session, sends the prompt once, and every `interval` types `/clear` followed by the prompt again. The Claude process stays alive between cycles; only the conversation history is dropped.
 
 Best paired with `/loop`, where the prompt itself is the long-running task and you only want to prevent its context from growing unbounded across hours of runtime.
 

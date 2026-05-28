@@ -1,11 +1,25 @@
 # ClaudeCron
 
-Run [Claude Code](https://www.anthropic.com/claude-code) on a schedule.
+Run [Claude Code](https://www.anthropic.com/claude-code) on a schedule — without burning your context window.
 
 `claude-cron` drives Claude in two modes:
 
 - **restart** — fire a one-shot prompt, kill the process, sleep, repeat. No context carries between runs.
 - **clear** — spawn one long-lived Claude, send a prompt, and every N minutes type `/clear` and re-send the prompt to wipe accumulated context without losing the loop.
+
+## Why
+
+If you've tried scheduling a recurring task *inside* Claude Code itself — e.g. `/loop 1m "check the deploy"` — you've probably hit two problems:
+
+- **Token cost climbs every tick.** Each iteration keeps appending to the same session, so the context (and the per-tick cost) grows without bound. After an hour of `/loop 1m`, every run is paying for a huge cached prefix it doesn't actually need.
+- **It eventually breaks.** Once the context gets large enough that auto-compaction can't keep up — or fails outright — the loop stalls, derails, or stops responding.
+
+`claude-cron` sidesteps both by managing the loop *outside* the conversation:
+
+- **restart mode** spawns a brand-new Claude session every tick. Context starts empty each time, so per-run token cost is flat no matter how long the loop has been running.
+- **clear mode** keeps `/loop` itself but resets the session's context every N minutes via `/clear`, so the inner loop never gets the chance to blow up.
+
+Either way, the outer scheduler is a tiny Node process that won't degrade under context pressure — it just keeps ticking. Stick with raw `/loop` only when each run genuinely needs to *remember* the previous ones.
 
 ## Install
 

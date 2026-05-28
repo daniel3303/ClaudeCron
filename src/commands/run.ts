@@ -1,8 +1,10 @@
+import type { IPty } from 'node-pty';
 import { parseInterval } from '../lib/interval.js';
 import { runOnce } from '../lib/runner.js';
 
 const DEFAULT_IDLE_SECONDS = 5;
 const SETTLE_SECONDS = 2;
+const CTRL_C_BYTE = 0x03;
 
 export interface RunCommandArgs {
   interval: string;
@@ -15,29 +17,64 @@ export async function runCommand(args: RunCommandArgs): Promise<void> {
   const idleSeconds = parseIdleSeconds(args.idleSeconds);
 
   const controller = new AbortController();
-  process.on('SIGINT', () => {
-    process.stdout.write('\n[claude-cron] stopping…\n');
-    controller.abort();
-  });
+  let currentChild: IPty | null = null;
 
-  while (!controller.signal.aborted) {
-    process.stdout.write('\n[claude-cron] launching claude…\n');
-    await runOnce({
-      prompt: args.prompt,
-      idleSeconds,
-      settleSeconds: SETTLE_SECONDS,
-      onOutput: data => process.stdout.write(data),
-      signal: controller.signal,
-    });
-    if (controller.signal.aborted) break;
-    process.stdout.write(`\n[claude-cron] done. sleeping ${intervalSeconds}s…\n`);
-    try {
-      await sleep(intervalSeconds * 1000, controller.signal);
-    } catch {
-      break;
+  const restoreStdin = setupStdinForwarding(
+    () => currentChild,
+    () => controller.abort()
+  );
+  const sigintHandler = (): void => controller.abort();
+  process.on('SIGINT', sigintHandler);
+
+  try {
+    while (!controller.signal.aborted) {
+      process.stdout.write('\n[claude-cron] launching claude…\n');
+      await runOnce({
+        prompt: args.prompt,
+        idleSeconds,
+        settleSeconds: SETTLE_SECONDS,
+        onOutput: data => process.stdout.write(data),
+        onSpawn: child => { currentChild = child; },
+        signal: controller.signal,
+      });
+      currentChild = null;
+      if (controller.signal.aborted) break;
+      process.stdout.write(`\n[claude-cron] done. sleeping ${intervalSeconds}s…\n`);
+      try {
+        await sleep(intervalSeconds * 1000, controller.signal);
+      } catch {
+        break;
+      }
     }
+  } finally {
+    process.removeListener('SIGINT', sigintHandler);
+    restoreStdin();
+    process.stdout.write('\n[claude-cron] stopped\n');
   }
-  process.stdout.write('\n[claude-cron] stopped\n');
+}
+
+function setupStdinForwarding(
+  getChild: () => IPty | null,
+  onInterrupt: () => void
+): () => void {
+  if (!process.stdin.isTTY) return () => { /* nothing to restore */ };
+
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  const onData = (data: Buffer): void => {
+    if (data.length === 1 && data[0] === CTRL_C_BYTE) {
+      onInterrupt();
+      return;
+    }
+    getChild()?.write(data.toString());
+  };
+  process.stdin.on('data', onData);
+
+  return () => {
+    process.stdin.off('data', onData);
+    process.stdin.setRawMode(false);
+    process.stdin.pause();
+  };
 }
 
 function parseIdleSeconds(raw: string | undefined): number {

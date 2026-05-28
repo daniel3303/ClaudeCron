@@ -9,11 +9,12 @@ export interface RunOnceOptions {
   idleSeconds: number;
   settleSeconds: number;
   onOutput?: (data: string) => void;
+  onSpawn?: (child: pty.IPty) => void;
   signal?: AbortSignal;
 }
 
 export function runOnce(options: RunOnceOptions): Promise<void> {
-  const { prompt, idleSeconds, settleSeconds, onOutput, signal } = options;
+  const { prompt, idleSeconds, settleSeconds, onOutput, onSpawn, signal } = options;
   return new Promise(resolve => {
     const child = pty.spawn('claude', [], {
       name: process.env.TERM ?? 'xterm-256color',
@@ -22,6 +23,7 @@ export function runOnce(options: RunOnceOptions): Promise<void> {
       cwd: process.cwd(),
       env: process.env as Record<string, string>,
     });
+    onSpawn?.(child);
 
     let lastOutputMs = Date.now();
     let promptSent = false;

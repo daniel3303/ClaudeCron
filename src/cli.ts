@@ -7,7 +7,6 @@ const USAGE = `claude-cron — schedule recurring claude runs
 usage:
   claude-cron restart <interval> "<prompt>" [idle-seconds]
   claude-cron clear   <interval> "<prompt>"
-  claude-cron         <interval> "<prompt>" [idle-seconds]   (legacy = restart)
 
 modes:
   restart  spawn a fresh claude every <interval>, send the prompt,
@@ -28,10 +27,7 @@ args:
 examples:
   claude-cron restart 10m "summarize today's market news"
   claude-cron clear   30m "/loop 1m /improve-code"
-  claude-cron         2h  "check for new SEC filings" 15      # legacy
 `;
-
-const INTERVAL_PATTERN = /^\d+(?:\.\d+)?[smh]?$/;
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -52,13 +48,6 @@ async function main(): Promise<void> {
       const [, interval, prompt] = argv;
       requireArgs({ interval, prompt }, 'clear');
       await clearCommand({ interval, prompt });
-      return;
-    }
-    if (INTERVAL_PATTERN.test(first)) {
-      // Legacy invocation: `claude-cron 10m "..."` ⇒ implicit restart.
-      const [interval, prompt, idleSeconds] = argv;
-      requireArgs({ interval, prompt }, 'restart');
-      await restartCommand({ interval, prompt, idleSeconds });
       return;
     }
     process.stderr.write(`unknown subcommand: "${first}"\n\n${USAGE}`);

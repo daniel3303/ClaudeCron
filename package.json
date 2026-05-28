@@ -1,6 +1,6 @@
 {
-  "name": "claude-cron",
-  "version": "0.2.1",
+  "name": "claude-code-cron",
+  "version": "0.3.0",
   "description": "Run Claude Code on a schedule — fire a prompt, wait for it to finish, kill it, repeat.",
   "type": "module",
   "bin": {
@@ -40,10 +40,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/daniel3303/ClaudeCron.git"
+    "url": "git+https://github.com/daniel3303/ClaudeCodeCron.git"
   },
   "bugs": {
-    "url": "https://github.com/daniel3303/ClaudeCron/issues"
+    "url": "https://github.com/daniel3303/ClaudeCodeCron/issues"
   },
-  "homepage": "https://github.com/daniel3303/ClaudeCron#readme"
+  "homepage": "https://github.com/daniel3303/ClaudeCodeCron#readme"
 }

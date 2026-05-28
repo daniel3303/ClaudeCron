@@ -4,10 +4,11 @@ Run [Claude Code](https://www.anthropic.com/claude-code) on a schedule — witho
 
 ![claude-cron restart mode — fresh Claude session every 5s](docs/demo.gif)
 
-`claude-cron` drives Claude in two modes:
+`claude-cron` drives Claude in three modes:
 
 - **restart** — fire a one-shot prompt, kill the process, sleep, repeat. No context carries between runs.
 - **clear** — spawn one long-lived Claude, send a prompt, and every N minutes type `/clear` and re-send the prompt to wipe accumulated context without losing the loop.
+- **compact** — same shape as clear, but sends `/compact` instead of `/clear` so Claude summarises the context rather than wiping it. Use when you DO want runs to remember each other.
 
 ## Why
 
@@ -20,8 +21,9 @@ If you've tried scheduling a recurring task *inside* Claude Code itself — e.g.
 
 - **restart mode** spawns a brand-new Claude session every tick. Context starts empty each time, so per-run token cost is flat no matter how long the loop has been running.
 - **clear mode** keeps `/loop` itself but resets the session's context every N minutes via `/clear`, so the inner loop never gets the chance to blow up.
+- **compact mode** sits between the two — keeps the loop running and the session alive, but every N minutes sends `/compact` so Claude summarises rather than discards what came before. Pick this when later runs genuinely need to remember earlier ones.
 
-Either way, the outer scheduler is a tiny Node process that won't degrade under context pressure — it just keeps ticking. Stick with raw `/loop` only when each run genuinely needs to *remember* the previous ones.
+The outer scheduler is a tiny Node process that won't degrade under context pressure — it just keeps ticking. Stick with raw `/loop` only when you specifically need the model to track every single iteration verbatim.
 
 ## Install
 
@@ -36,6 +38,7 @@ Requires Node 20+ and `claude` on your `PATH`.
 ```bash
 claude-cron restart <interval> "<prompt>" [idle-seconds]
 claude-cron clear   <interval> "<prompt>"
+claude-cron compact <interval> "<prompt>"
 ```
 
 | Arg | Meaning |
@@ -73,6 +76,20 @@ claude-cron clear 30m "/loop 1m /improve-code"
 
 # Same idea, hourly reset
 claude-cron clear 1h "/loop 5m /add-test"
+```
+
+### compact mode
+
+Identical to clear mode in structure — one long-lived Claude session, prompt sent on startup, a slash command fired every `interval` — except it sends `/compact` instead of `/clear`. Claude summarises the conversation history into a shorter form rather than throwing it away, so later runs still see the gist of earlier ones.
+
+Use this when the inner `/loop` builds up *useful* state across iterations (a running list, a tracked target, an evolving plan) and you only want to keep the token count manageable — not reset the loop's memory.
+
+```bash
+# Add tests in a /loop forever, summarise context every hour
+claude-cron compact 1h "/loop 5m /add-test"
+
+# Watch a deploy queue, summarise every two hours to keep history but stop bloat
+claude-cron compact 2h "/loop 5m check the deploy queue and tell me what changed"
 ```
 
 ## License

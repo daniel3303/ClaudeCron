@@ -1,7 +1,10 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import { clearCommand } from './commands/clear.js';
 import { compactCommand } from './commands/compact.js';
 import { restartCommand } from './commands/restart.js';
+
+const { version: VERSION } = createRequire(import.meta.url)('../package.json') as { version: string };
 
 const USAGE = `claude-cron — schedule recurring claude runs
 
@@ -9,6 +12,7 @@ usage:
   claude-cron restart <interval> "<prompt>" [idle-seconds]
   claude-cron clear   <interval> "<prompt>"
   claude-cron compact <interval> "<prompt>"
+  claude-cron --version | -v
 
 modes:
   restart  spawn a fresh claude every <interval>, send the prompt,
@@ -46,6 +50,10 @@ async function main(): Promise<void> {
 
   const [first] = argv;
   try {
+    if (first === '--version' || first === '-v') {
+      process.stdout.write(`claude-cron ${VERSION}\n`);
+      return;
+    }
     if (first === 'restart') {
       const [, interval, prompt, idleSeconds] = argv;
       requireArgs({ interval, prompt }, 'restart');

@@ -1,5 +1,6 @@
 import pty from 'node-pty';
 import { parseInterval } from './interval.js';
+import { setupResizeForwarding } from './resize.js';
 import { sleep } from './sleep.js';
 import { setupStdinForwarding } from './stdin.js';
 
@@ -48,6 +49,7 @@ export async function runResetLoop(options: ResetLoopOptions): Promise<void> {
   child.onExit(() => controller.abort());
 
   const restoreStdin = setupStdinForwarding(() => child, () => controller.abort());
+  const restoreResize = setupResizeForwarding(() => child);
   const sigintHandler = (): void => {
     controller.abort();
     safeKill(child);
@@ -84,6 +86,7 @@ export async function runResetLoop(options: ResetLoopOptions): Promise<void> {
     }
   } finally {
     process.removeListener('SIGINT', sigintHandler);
+    restoreResize();
     restoreStdin();
     safeKill(child);
     onStatus('stopped');

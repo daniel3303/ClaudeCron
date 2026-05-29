@@ -1,6 +1,7 @@
 import type { IPty } from 'node-pty';
 import { parseInterval } from '../lib/interval.js';
 import { runOnce } from '../lib/runner.js';
+import { setupResizeForwarding } from '../lib/resize.js';
 import { sleep } from '../lib/sleep.js';
 import { setupStdinForwarding } from '../lib/stdin.js';
 
@@ -33,6 +34,7 @@ export async function restartCommand(args: RestartCommandArgs): Promise<void> {
     () => currentChild,
     () => controller.abort()
   );
+  const restoreResize = setupResizeForwarding(() => currentChild);
   const sigintHandler = (): void => controller.abort();
   process.on('SIGINT', sigintHandler);
 
@@ -58,6 +60,7 @@ export async function restartCommand(args: RestartCommandArgs): Promise<void> {
     }
   } finally {
     process.removeListener('SIGINT', sigintHandler);
+    restoreResize();
     restoreStdin();
     process.stdout.write('\n[claude-cron] stopped\n');
   }
